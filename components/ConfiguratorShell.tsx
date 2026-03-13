@@ -299,16 +299,16 @@ export function ConfiguratorShell({
   return (
     <MainLayout
       header={
-        <div className="flex items-center justify-between px-4 py-3">
+        <div className="flex items-center justify-between px-3 py-2">
           <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-600">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-600">
               Engineering Configurator
             </p>
-            <h1 className="mt-1 text-lg font-semibold text-slate-900">LED Wall Configurator</h1>
+            <h1 className="mt-0.5 text-[15px] font-semibold text-slate-900">LED Wall Configurator</h1>
           </div>
-          <div className="flex items-center gap-2 text-xs text-slate-600">
-            <span className="border border-slate-400 bg-[#eef1f4] px-3 py-1">Mode: Main</span>
-            <span className="border border-slate-400 bg-[#eef1f4] px-3 py-1">
+          <div className="flex items-center gap-1.5 text-[11px] text-slate-600">
+            <span className="border border-slate-400 bg-[#eef1f4] px-2 py-1">Mode: Main</span>
+            <span className="border border-slate-400 bg-[#eef1f4] px-2 py-1">
               Processor Check
             </span>
           </div>
@@ -316,8 +316,8 @@ export function ConfiguratorShell({
       }
       left={
         <div>
-          <div className="border-b border-slate-400 bg-[#d7dce2] px-4 py-3">
-            <h2 className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-700">
+          <div className="border-b border-slate-400 bg-[#d7dce2] px-3 py-2">
+            <h2 className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-700">
               Configuration
             </h2>
           </div>

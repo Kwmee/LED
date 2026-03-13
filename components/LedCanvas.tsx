@@ -13,9 +13,9 @@ type LedCanvasProps = {
   heightPixels: number;
 };
 
-const CANVAS_WIDTH = 920;
-const CANVAS_HEIGHT = 560;
-const PADDING = 36;
+const CANVAS_WIDTH = 980;
+const CANVAS_HEIGHT = 620;
+const PADDING = 24;
 
 export function LedCanvas({
   panelGrid,
@@ -57,17 +57,17 @@ export function LedCanvas({
 
   return (
     <div className="flex h-full flex-col">
-      <div className="flex items-center justify-between gap-4 border-b border-slate-300 bg-[#d7dce2] px-4 py-3">
+      <div className="flex items-center justify-between gap-3 border-b border-slate-300 bg-[#d7dce2] px-3 py-2">
         <div>
-          <h2 className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-700">
+          <h2 className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-700">
             Canvas
           </h2>
-          <p className="mt-1 text-sm text-slate-600">
+          <p className="mt-0.5 text-[12px] text-slate-600">
             LED wall layout, panel grid and processor port assignment.
           </p>
         </div>
-        <label className="flex items-center gap-3 text-sm text-slate-600">
-          <span className="font-medium">Zoom</span>
+        <label className="flex items-center gap-2 text-[12px] text-slate-600">
+          <span className="font-semibold uppercase tracking-[0.06em]">Zoom</span>
           <input
             type="range"
             min="0.6"
@@ -79,7 +79,7 @@ export function LedCanvas({
         </label>
       </div>
 
-      <div className="flex-1 overflow-auto bg-[#eef2f5] p-4">
+      <div className="flex-1 overflow-auto bg-[#eef2f5] p-2">
         <div className="inline-block border border-slate-400 bg-white">
         <Stage width={CANVAS_WIDTH} height={CANVAS_HEIGHT}>
           <Layer>
