@@ -5,4 +5,6 @@ export type Processor = {
   maxPixels: number;
   ports: number;
   pixelsPerPort: number;
+  source?: "default" | "custom";
+  userId?: string;
 };

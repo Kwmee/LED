@@ -39,7 +39,9 @@ export type ProjectRecord = {
   heightM: number;
   pitch: number;
   panelId: string;
+  panelSource: "default" | "custom";
   processorId: string;
+  processorSource: "default" | "custom";
   configJson: ConfigurationSummary;
   createdAt: string;
 };

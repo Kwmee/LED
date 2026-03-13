@@ -1,38 +1,28 @@
-create extension if not exists "pgcrypto";
+alter table if exists public.projects
+  drop constraint if exists projects_panel_id_fkey;
 
-create table if not exists public.panels (
-  id text primary key,
-  brand text not null,
-  model text not null,
-  width_mm integer not null,
-  height_mm integer not null,
-  pixel_width integer not null,
-  pixel_height integer not null,
-  pitch numeric(6,2) not null
-);
+alter table if exists public.projects
+  drop constraint if exists projects_processor_id_fkey;
 
-create table if not exists public.processors (
-  id text primary key,
-  brand text not null,
-  model text not null,
-  max_pixels integer not null,
-  ports integer not null,
-  pixels_per_port integer not null default 650000
-);
+alter table public.projects
+  add column if not exists panel_source text not null default 'default';
 
-create table if not exists public.projects (
-  id uuid primary key default gen_random_uuid(),
-  user_id uuid not null,
-  width_m numeric(8,2) not null,
-  height_m numeric(8,2) not null,
-  pitch numeric(6,2) not null,
-  panel_id text not null,
-  panel_source text not null default 'default' check (panel_source in ('default', 'custom')),
-  processor_id text not null,
-  processor_source text not null default 'default' check (processor_source in ('default', 'custom')),
-  config_json jsonb not null,
-  created_at timestamptz not null default now()
-);
+alter table public.projects
+  add column if not exists processor_source text not null default 'default';
+
+alter table public.projects
+  drop constraint if exists projects_panel_source_check;
+
+alter table public.projects
+  add constraint projects_panel_source_check
+  check (panel_source in ('default', 'custom'));
+
+alter table public.projects
+  drop constraint if exists projects_processor_source_check;
+
+alter table public.projects
+  add constraint projects_processor_source_check
+  check (processor_source in ('default', 'custom'));
 
 create table if not exists public.custom_panels (
   id uuid primary key default gen_random_uuid(),
@@ -60,19 +50,8 @@ create table if not exists public.custom_processors (
   created_at timestamptz not null default now()
 );
 
-alter table public.projects enable row level security;
 alter table public.custom_panels enable row level security;
 alter table public.custom_processors enable row level security;
-
-create policy "Users can read own projects"
-on public.projects
-for select
-using (auth.uid() = user_id);
-
-create policy "Users can insert own projects"
-on public.projects
-for insert
-with check (auth.uid() = user_id);
 
 create policy "Users can select own custom panels"
 on public.custom_panels

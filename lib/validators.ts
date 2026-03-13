@@ -3,7 +3,9 @@ type ProjectInsertPayload = {
   height_m: number;
   pitch: number;
   panel_id: string;
+  panel_source: "default" | "custom";
   processor_id: string;
+  processor_source: "default" | "custom";
   config_json: unknown;
 };
 
@@ -14,7 +16,12 @@ export const saveProjectSchema = {
     }
 
     const payload = input as Record<string, unknown>;
-    const requiredStringFields = ["panel_id", "processor_id"] as const;
+    const requiredStringFields = [
+      "panel_id",
+      "panel_source",
+      "processor_id",
+      "processor_source"
+    ] as const;
     const requiredNumberFields = ["width_m", "height_m", "pitch"] as const;
 
     for (const field of requiredStringFields) {
@@ -38,7 +45,9 @@ export const saveProjectSchema = {
       height_m: payload.height_m as number,
       pitch: payload.pitch as number,
       panel_id: payload.panel_id as string,
+      panel_source: payload.panel_source as "default" | "custom",
       processor_id: payload.processor_id as string,
+      processor_source: payload.processor_source as "default" | "custom",
       config_json: payload.config_json
     };
   }

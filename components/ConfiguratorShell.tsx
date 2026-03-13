@@ -4,6 +4,7 @@ import dynamic from "next/dynamic";
 import { useEffect, useMemo, useState } from "react";
 import type { Session, User } from "@supabase/supabase-js";
 import { AuthPanel } from "@/components/AuthPanel";
+import { CustomHardwareList } from "@/components/CustomHardwareList";
 import { MainLayout } from "@/components/MainLayout";
 import { PanelSelector } from "@/components/PanelSelector";
 import { ProcessorSelector } from "@/components/ProcessorSelector";
@@ -64,8 +65,15 @@ export function ConfiguratorShell({
   const [authLoading, setAuthLoading] = useState(false);
   const [authMessage, setAuthMessage] = useState("");
   const [authTone, setAuthTone] = useState<"neutral" | "success" | "error">("neutral");
+  const [customPanels, setCustomPanels] = useState<Panel[]>([]);
+  const [customProcessors, setCustomProcessors] = useState<Processor[]>([]);
 
   const supabase = useMemo(() => createBrowserSupabaseClient(), []);
+  const availablePanels = useMemo(() => [...panels, ...customPanels], [customPanels, panels]);
+  const availableProcessors = useMemo(
+    () => [...processors, ...customProcessors],
+    [customProcessors, processors]
+  );
 
   useEffect(() => {
     if (!supabase) {
@@ -109,13 +117,25 @@ export function ConfiguratorShell({
   }, [supabase]);
 
   const selectedPanel = useMemo(
-    () => panels.find((panel) => panel.id === panelId) ?? null,
-    [panelId, panels]
+    () => availablePanels.find((panel) => panel.id === panelId) ?? null,
+    [availablePanels, panelId]
   );
   const selectedProcessor = useMemo(
-    () => processors.find((processor) => processor.id === processorId) ?? null,
-    [processorId, processors]
+    () => availableProcessors.find((processor) => processor.id === processorId) ?? null,
+    [availableProcessors, processorId]
   );
+
+  useEffect(() => {
+    if (!selectedPanel && availablePanels[0]) {
+      setPanelId(availablePanels[0].id);
+    }
+  }, [availablePanels, selectedPanel]);
+
+  useEffect(() => {
+    if (!selectedProcessor && availableProcessors[0]) {
+      setProcessorId(availableProcessors[0].id);
+    }
+  }, [availableProcessors, selectedProcessor]);
 
   const screenPixels = useMemo(
     () => calculateScreenPixels(widthM, heightM, pitch),
@@ -170,7 +190,9 @@ export function ConfiguratorShell({
           height_m: heightM,
           pitch,
           panel_id: selectedPanel.id,
+          panel_source: selectedPanel.source ?? "default",
           processor_id: selectedProcessor.id,
+          processor_source: selectedProcessor.source ?? "default",
           config_json: configurationSummary
         })
       });
@@ -330,6 +352,12 @@ export function ConfiguratorShell({
             onSignUp={handleSignUp}
             onSignOut={handleSignOut}
           />
+          <CustomHardwareList
+            session={session}
+            user={user}
+            onPanelsChange={setCustomPanels}
+            onProcessorsChange={setCustomProcessors}
+          />
           <ScreenInput
             widthM={widthM}
             heightM={heightM}
@@ -338,9 +366,13 @@ export function ConfiguratorShell({
             onHeightChange={setHeightM}
             onPitchChange={setPitch}
           />
-          <PanelSelector panels={panels} selectedPanelId={panelId} onSelect={setPanelId} />
+          <PanelSelector
+            panels={availablePanels}
+            selectedPanelId={panelId}
+            onSelect={setPanelId}
+          />
           <ProcessorSelector
-            processors={processors}
+            processors={availableProcessors}
             selectedProcessorId={processorId}
             onSelect={setProcessorId}
           />

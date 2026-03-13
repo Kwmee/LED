@@ -29,6 +29,7 @@ export function PanelSelector({
           <option key={panel.id} value={panel.id}>
             {panel.brand} {panel.model} | {panel.widthMm}x{panel.heightMm} mm |{" "}
             {panel.pixelWidth}x{panel.pixelHeight}
+            {panel.source === "custom" ? " (Custom)" : ""}
           </option>
         ))}
       </select>

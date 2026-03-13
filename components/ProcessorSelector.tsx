@@ -29,6 +29,7 @@ export function ProcessorSelector({
           <option key={processor.id} value={processor.id}>
             {processor.brand} {processor.model} | {processor.maxPixels.toLocaleString()} px |{" "}
             {processor.ports} ports
+            {processor.source === "custom" ? " (Custom)" : ""}
           </option>
         ))}
       </select>

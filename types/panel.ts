@@ -7,4 +7,8 @@ export type Panel = {
   pixelWidth: number;
   pixelHeight: number;
   pitch: number;
+  source?: "default" | "custom";
+  userId?: string;
+  weightKg?: number | null;
+  powerMaxW?: number | null;
 };
