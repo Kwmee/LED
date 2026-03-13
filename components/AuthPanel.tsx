@@ -123,7 +123,7 @@ export function AuthPanel({
       </form>
 
       <p className="mt-3 text-xs text-slate-400">
-        Use the same credentials later to access saved configurations.
+        After signup, you may be signed in immediately or asked to confirm your email first.
       </p>
       {authMessage ? <p className="mt-2 text-xs text-slate-300">{authMessage}</p> : null}
     </div>

@@ -206,7 +206,7 @@ export function ConfiguratorShell({
     setAuthMessage("");
 
     try {
-      const { error } = await supabase.auth.signUp({
+      const { data, error } = await supabase.auth.signUp({
         email,
         password
       });
@@ -215,7 +215,19 @@ export function ConfiguratorShell({
         throw error;
       }
 
-      setAuthMessage("Account created. Check your email if confirmation is enabled.");
+      if (data.session) {
+        setAuthMessage("Account created and session started.");
+        return;
+      }
+
+      if (data.user) {
+        setAuthMessage(
+          "Account created. Check your inbox or spam folder to confirm the email if confirmation is enabled in Supabase."
+        );
+        return;
+      }
+
+      setAuthMessage("Signup request processed. Review your Supabase email confirmation settings.");
     } catch (error) {
       setAuthMessage(error instanceof Error ? error.message : "Unable to create account.");
     } finally {
