@@ -1,7 +1,9 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import type { Session, User } from "@supabase/supabase-js";
+import { AuthPanel } from "@/components/AuthPanel";
 import { PanelSelector } from "@/components/PanelSelector";
 import { ProcessorSelector } from "@/components/ProcessorSelector";
 import { ScreenInput } from "@/components/ScreenInput";
@@ -14,6 +16,7 @@ import {
   isProcessorCompatible
 } from "@/lib/calculations";
 import { buildPortMapping } from "@/lib/portMapping";
+import { createBrowserSupabaseClient } from "@/lib/supabase/client";
 import type { Panel } from "@/types/panel";
 import type { Processor } from "@/types/processor";
 
@@ -40,6 +43,51 @@ export function ConfiguratorShell({
   const [processorId, setProcessorId] = useState(processors[0]?.id ?? "");
   const [saveState, setSaveState] = useState<"idle" | "saving" | "saved" | "error">("idle");
   const [saveMessage, setSaveMessage] = useState("");
+  const [user, setUser] = useState<User | null>(null);
+  const [session, setSession] = useState<Session | null>(null);
+  const [authLoading, setAuthLoading] = useState(false);
+  const [authMessage, setAuthMessage] = useState("");
+
+  const supabase = useMemo(() => createBrowserSupabaseClient(), []);
+
+  useEffect(() => {
+    if (!supabase) {
+      setAuthMessage("Supabase client is not configured.");
+      return;
+    }
+
+    let isMounted = true;
+
+    supabase.auth.getSession().then(({ data, error }) => {
+      if (!isMounted) {
+        return;
+      }
+
+      if (error) {
+        setAuthMessage(error.message);
+        return;
+      }
+
+      setSession(data.session);
+      setUser(data.session?.user ?? null);
+    });
+
+    const {
+      data: { subscription }
+    } = supabase.auth.onAuthStateChange((_event, currentSession) => {
+      if (!isMounted) {
+        return;
+      }
+
+      setSession(currentSession);
+      setUser(currentSession?.user ?? null);
+    });
+
+    return () => {
+      isMounted = false;
+      subscription.unsubscribe();
+    };
+  }, [supabase]);
 
   const selectedPanel = useMemo(
     () => panels.find((panel) => panel.id === panelId) ?? null,
@@ -84,7 +132,7 @@ export function ConfiguratorShell({
       : null;
 
   async function handleSave() {
-    if (!configurationSummary || !selectedPanel || !selectedProcessor) {
+    if (!configurationSummary || !selectedPanel || !selectedProcessor || !session?.access_token) {
       return;
     }
 
@@ -95,10 +143,10 @@ export function ConfiguratorShell({
       const response = await fetch("/api/projects", {
         method: "POST",
         headers: {
-          "Content-Type": "application/json"
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${session.access_token}`
         },
         body: JSON.stringify({
-          user_id: "00000000-0000-0000-0000-000000000000",
           width_m: widthM,
           height_m: heightM,
           pitch,
@@ -121,6 +169,85 @@ export function ConfiguratorShell({
     }
   }
 
+  async function handleSignIn(email: string, password: string) {
+    if (!supabase) {
+      setAuthMessage("Supabase client is not configured.");
+      return;
+    }
+
+    setAuthLoading(true);
+    setAuthMessage("");
+
+    try {
+      const { error } = await supabase.auth.signInWithPassword({
+        email,
+        password
+      });
+
+      if (error) {
+        throw error;
+      }
+
+      setAuthMessage("Session started.");
+    } catch (error) {
+      setAuthMessage(error instanceof Error ? error.message : "Unable to sign in.");
+    } finally {
+      setAuthLoading(false);
+    }
+  }
+
+  async function handleSignUp(email: string, password: string) {
+    if (!supabase) {
+      setAuthMessage("Supabase client is not configured.");
+      return;
+    }
+
+    setAuthLoading(true);
+    setAuthMessage("");
+
+    try {
+      const { error } = await supabase.auth.signUp({
+        email,
+        password
+      });
+
+      if (error) {
+        throw error;
+      }
+
+      setAuthMessage("Account created. Check your email if confirmation is enabled.");
+    } catch (error) {
+      setAuthMessage(error instanceof Error ? error.message : "Unable to create account.");
+    } finally {
+      setAuthLoading(false);
+    }
+  }
+
+  async function handleSignOut() {
+    if (!supabase) {
+      setAuthMessage("Supabase client is not configured.");
+      return;
+    }
+
+    setAuthLoading(true);
+
+    try {
+      const { error } = await supabase.auth.signOut();
+
+      if (error) {
+        throw error;
+      }
+
+      setAuthMessage("Signed out.");
+      setSaveMessage("");
+      setSaveState("idle");
+    } catch (error) {
+      setAuthMessage(error instanceof Error ? error.message : "Unable to sign out.");
+    } finally {
+      setAuthLoading(false);
+    }
+  }
+
   return (
     <div className="mx-auto grid max-w-7xl gap-6 lg:grid-cols-[360px_minmax(0,1fr)]">
       <section className="space-y-6 rounded-3xl border border-stroke bg-surface/85 p-6 shadow-xl shadow-black/20 backdrop-blur">
@@ -132,6 +259,15 @@ export function ConfiguratorShell({
             port usage.
           </p>
         </div>
+
+        <AuthPanel
+          user={user}
+          authLoading={authLoading}
+          authMessage={authMessage}
+          onSignIn={handleSignIn}
+          onSignUp={handleSignUp}
+          onSignOut={handleSignOut}
+        />
 
         <ScreenInput
           widthM={widthM}
@@ -191,10 +327,14 @@ export function ConfiguratorShell({
           <button
             type="button"
             onClick={handleSave}
-            disabled={!configurationSummary || saveState === "saving"}
+            disabled={!configurationSummary || saveState === "saving" || !user}
             className="mt-4 w-full rounded-full bg-accent px-4 py-3 text-sm font-medium text-black transition hover:bg-orange-300 disabled:cursor-not-allowed disabled:bg-slate-600 disabled:text-slate-300"
           >
-            {saveState === "saving" ? "Saving..." : "Save project"}
+            {saveState === "saving"
+              ? "Saving..."
+              : user
+                ? "Save project"
+                : "Sign in to save"}
           </button>
 
           {saveMessage ? <p className="mt-2 text-xs text-slate-300">{saveMessage}</p> : null}

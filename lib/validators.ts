@@ -1,5 +1,4 @@
 type ProjectInsertPayload = {
-  user_id: string;
   width_m: number;
   height_m: number;
   pitch: number;
@@ -15,7 +14,7 @@ export const saveProjectSchema = {
     }
 
     const payload = input as Record<string, unknown>;
-    const requiredStringFields = ["user_id", "panel_id", "processor_id"] as const;
+    const requiredStringFields = ["panel_id", "processor_id"] as const;
     const requiredNumberFields = ["width_m", "height_m", "pitch"] as const;
 
     for (const field of requiredStringFields) {
@@ -35,7 +34,6 @@ export const saveProjectSchema = {
     }
 
     return {
-      user_id: payload.user_id as string,
       width_m: payload.width_m as number,
       height_m: payload.height_m as number,
       pitch: payload.pitch as number,
