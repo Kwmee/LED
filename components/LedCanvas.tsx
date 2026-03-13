@@ -57,6 +57,33 @@ export function LedCanvas({
     });
   }, [panelGrid, portMapping]);
 
+  const gridRectangles = useMemo(() => {
+    if (!panelGrid) {
+      return [];
+    }
+
+    return Array.from({ length: panelGrid.rows }).flatMap((_, rowIndex) =>
+      Array.from({ length: panelGrid.columns }).map((__, columnIndex) => {
+        const x = PADDING + columnIndex * cellSize;
+        const y = PADDING + rowIndex * cellSize;
+        const colorIndex = rowIndex * panelGrid.columns + columnIndex;
+
+        return (
+          <Rect
+            key={`${rowIndex}-${columnIndex}`}
+            x={x}
+            y={y}
+            width={cellSize - 2}
+            height={cellSize - 2}
+            fill={panelColors[colorIndex]}
+            stroke="#475569"
+            strokeWidth={0.8}
+          />
+        );
+      })
+    );
+  }, [cellSize, panelColors, panelGrid]);
+
   return (
     <div className="flex h-full flex-col">
       <div className="flex items-center justify-between gap-3 border-b border-slate-300 bg-[#d7dce2] px-3 py-2">
@@ -96,26 +123,7 @@ export function LedCanvas({
               />
             ) : (
               <>
-                {Array.from({ length: panelGrid.rows }).map((_, rowIndex) =>
-                  Array.from({ length: panelGrid.columns }).map((__, columnIndex) => {
-                    const x = PADDING + columnIndex * cellSize;
-                    const y = PADDING + rowIndex * cellSize;
-                    const colorIndex = rowIndex * panelGrid.columns + columnIndex;
-
-                    return (
-                      <Rect
-                        key={`${rowIndex}-${columnIndex}`}
-                        x={x}
-                        y={y}
-                        width={cellSize - 2}
-                        height={cellSize - 2}
-                        fill={panelColors[colorIndex]}
-                        stroke="#475569"
-                        strokeWidth={0.8}
-                      />
-                    );
-                  })
-                )}
+                {gridRectangles}
                 <Text
                   x={PADDING}
                   y={CANVAS_HEIGHT - 28}

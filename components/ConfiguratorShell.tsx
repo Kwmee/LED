@@ -1,7 +1,7 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { AppLayout } from "@/components/AppLayout";
 import { ResultsPanel } from "@/components/ResultsPanel";
 import { SidebarConfig } from "@/components/SidebarConfig";
@@ -123,44 +123,78 @@ export function ConfiguratorShell({ panels, processors }: ConfiguratorShellProps
     [widthM, heightM, pitch]
   );
   const totalPixels = calculateTotalPixels(screenPixels.widthPixels, screenPixels.heightPixels);
-  const panelGrid = selectedPanel
-    ? calculatePanelGrid(screenPixels.widthPixels, screenPixels.heightPixels, selectedPanel)
-    : null;
-  const requiredPorts = selectedProcessor
-    ? calculateRequiredPorts(totalPixels, selectedProcessor.pixelsPerPort)
-    : 0;
-  const processorCompatibility =
-    selectedProcessor && isProcessorCompatible(totalPixels, requiredPorts, selectedProcessor);
-  const portMapping =
-    panelGrid && selectedProcessor
-      ? buildPortMapping(panelGrid.columns, selectedProcessor.pixelsPerPort, totalPixels)
-      : [];
+  const panelGrid = useMemo(
+    () =>
+      selectedPanel
+        ? calculatePanelGrid(
+            screenPixels.widthPixels,
+            screenPixels.heightPixels,
+            selectedPanel
+          )
+        : null,
+    [screenPixels.widthPixels, screenPixels.heightPixels, selectedPanel]
+  );
+
+  const requiredPorts = useMemo(
+    () =>
+      selectedProcessor ? calculateRequiredPorts(totalPixels, selectedProcessor.pixelsPerPort) : 0,
+    [totalPixels, selectedProcessor]
+  );
+
+  const processorCompatibility = useMemo(
+    () => selectedProcessor && isProcessorCompatible(totalPixels, requiredPorts, selectedProcessor),
+    [totalPixels, requiredPorts, selectedProcessor]
+  );
+
+  const portMapping = useMemo(
+    () =>
+      panelGrid && selectedProcessor
+        ? buildPortMapping(panelGrid.columns, selectedProcessor.pixelsPerPort, totalPixels)
+        : [],
+    [panelGrid, selectedProcessor, totalPixels]
+  );
   const totalPanels = panelGrid?.totalPanels ?? 0;
-  const totalWeightKg =
-    selectedPanel?.weightKg !== undefined && selectedPanel?.weightKg !== null
-      ? selectedPanel.weightKg * totalPanels
-      : null;
-  const totalPowerW =
-    selectedPanel?.powerMaxW !== undefined && selectedPanel?.powerMaxW !== null
-      ? selectedPanel.powerMaxW * totalPanels
-      : null;
+  const configurationSummary = useMemo(
+    () =>
+      selectedPanel && selectedProcessor && panelGrid
+        ? buildConfigurationSummary({
+            widthM,
+            heightM,
+            pitch,
+            panel: selectedPanel,
+            processor: selectedProcessor,
+            screenPixels,
+            totalPixels,
+            panelGrid,
+            portMapping
+          })
+        : null,
+    [
+      widthM,
+      heightM,
+      pitch,
+      selectedPanel,
+      selectedProcessor,
+      screenPixels,
+      totalPixels,
+      panelGrid,
+      portMapping
+    ]
+  );
 
-  const configurationSummary =
-    selectedPanel && selectedProcessor && panelGrid
-      ? buildConfigurationSummary({
-          widthM,
-          heightM,
-          pitch,
-          panel: selectedPanel,
-          processor: selectedProcessor,
-          screenPixels,
-          totalPixels,
-          panelGrid,
-          portMapping
-        })
-      : null;
+  const totalWeightKg = useMemo(
+    () =>
+      selectedPanel?.weightKg != null ? selectedPanel.weightKg * totalPanels : null,
+    [selectedPanel, totalPanels]
+  );
 
-  async function handleSave() {
+  const totalPowerW = useMemo(
+    () =>
+      selectedPanel?.powerMaxW != null ? selectedPanel.powerMaxW * totalPanels : null,
+    [selectedPanel, totalPanels]
+  );
+
+  const handleSave = useCallback(async () => {
     if (!configurationSummary || !selectedPanel || !selectedProcessor || !session?.access_token) {
       return;
     }
@@ -198,7 +232,15 @@ export function ConfiguratorShell({ panels, processors }: ConfiguratorShellProps
       setSaveState("error");
       setSaveMessage(error instanceof Error ? error.message : "Unable to save project");
     }
-  }
+  }, [
+    configurationSummary,
+    selectedPanel,
+    selectedProcessor,
+    session,
+    pitch,
+    widthM,
+    heightM
+  ]);
 
   return (
     <AppLayout
