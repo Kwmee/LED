@@ -49,12 +49,14 @@ export function ConfiguratorShell({
   const [session, setSession] = useState<Session | null>(null);
   const [authLoading, setAuthLoading] = useState(false);
   const [authMessage, setAuthMessage] = useState("");
+  const [authTone, setAuthTone] = useState<"neutral" | "success" | "error">("neutral");
 
   const supabase = useMemo(() => createBrowserSupabaseClient(), []);
 
   useEffect(() => {
     if (!supabase) {
       setAuthMessage("Supabase client is not configured.");
+      setAuthTone("error");
       return;
     }
 
@@ -67,6 +69,7 @@ export function ConfiguratorShell({
 
       if (error) {
         setAuthMessage(error.message);
+        setAuthTone("error");
         return;
       }
 
@@ -174,11 +177,13 @@ export function ConfiguratorShell({
   async function handleSignIn(email: string, password: string) {
     if (!supabase) {
       setAuthMessage("Supabase client is not configured.");
+      setAuthTone("error");
       return;
     }
 
     setAuthLoading(true);
     setAuthMessage("");
+    setAuthTone("neutral");
 
     try {
       const { error } = await supabase.auth.signInWithPassword({
@@ -191,8 +196,10 @@ export function ConfiguratorShell({
       }
 
       setAuthMessage("Session started.");
+      setAuthTone("success");
     } catch (error) {
       setAuthMessage(error instanceof Error ? error.message : "Unable to sign in.");
+      setAuthTone("error");
     } finally {
       setAuthLoading(false);
     }
@@ -201,16 +208,24 @@ export function ConfiguratorShell({
   async function handleSignUp(email: string, password: string) {
     if (!supabase) {
       setAuthMessage("Supabase client is not configured.");
+      setAuthTone("error");
       return;
     }
 
     setAuthLoading(true);
     setAuthMessage("");
+    setAuthTone("neutral");
 
     try {
       const { data, error } = await supabase.auth.signUp({
         email,
-        password
+        password,
+        options: {
+          emailRedirectTo:
+            typeof window === "undefined"
+              ? undefined
+              : `${window.location.origin}/auth/callback`
+        }
       });
 
       if (error) {
@@ -219,6 +234,7 @@ export function ConfiguratorShell({
 
       if (data.session) {
         setAuthMessage("Account created and session started.");
+        setAuthTone("success");
         return;
       }
 
@@ -226,12 +242,15 @@ export function ConfiguratorShell({
         setAuthMessage(
           "Account created. Check your inbox or spam folder to confirm the email if confirmation is enabled in Supabase."
         );
+        setAuthTone("success");
         return;
       }
 
       setAuthMessage("Signup request processed. Review your Supabase email confirmation settings.");
+      setAuthTone("neutral");
     } catch (error) {
       setAuthMessage(error instanceof Error ? error.message : "Unable to create account.");
+      setAuthTone("error");
     } finally {
       setAuthLoading(false);
     }
@@ -240,6 +259,7 @@ export function ConfiguratorShell({
   async function handleSignOut() {
     if (!supabase) {
       setAuthMessage("Supabase client is not configured.");
+      setAuthTone("error");
       return;
     }
 
@@ -253,10 +273,12 @@ export function ConfiguratorShell({
       }
 
       setAuthMessage("Signed out.");
+      setAuthTone("neutral");
       setSaveMessage("");
       setSaveState("idle");
     } catch (error) {
       setAuthMessage(error instanceof Error ? error.message : "Unable to sign out.");
+      setAuthTone("error");
     } finally {
       setAuthLoading(false);
     }
@@ -291,6 +313,7 @@ export function ConfiguratorShell({
             user={user}
             authLoading={authLoading}
             authMessage={authMessage}
+            authTone={authTone}
             onSignIn={handleSignIn}
             onSignUp={handleSignUp}
             onSignOut={handleSignOut}

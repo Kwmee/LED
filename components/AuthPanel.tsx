@@ -7,6 +7,7 @@ type AuthPanelProps = {
   user: User | null;
   authLoading: boolean;
   authMessage: string;
+  authTone: "neutral" | "success" | "error";
   onSignIn: (email: string, password: string) => Promise<void>;
   onSignUp: (email: string, password: string) => Promise<void>;
   onSignOut: () => Promise<void>;
@@ -16,6 +17,7 @@ export function AuthPanel({
   user,
   authLoading,
   authMessage,
+  authTone,
   onSignIn,
   onSignUp,
   onSignOut
@@ -34,6 +36,13 @@ export function AuthPanel({
 
     await onSignUp(email, password);
   }
+
+  const messageClasses =
+    authTone === "error"
+      ? "border-red-300 bg-red-50 text-red-700"
+      : authTone === "success"
+        ? "border-emerald-300 bg-emerald-50 text-emerald-700"
+        : "border-slate-300 bg-[#f0f3f6] text-slate-600";
 
   if (user) {
     return (
@@ -58,7 +67,9 @@ export function AuthPanel({
               Signed in as <span className="font-medium">{user.email}</span>
             </p>
           </div>
-          {authMessage ? <p className="mt-2 text-xs text-slate-600">{authMessage}</p> : null}
+          {authMessage ? (
+            <p className={`mt-3 border px-2 py-2 text-xs ${messageClasses}`}>{authMessage}</p>
+          ) : null}
         </div>
       </section>
     );
@@ -137,7 +148,9 @@ export function AuthPanel({
         <p className="text-xs text-slate-500">
           After signup, Supabase may sign you in immediately or require email confirmation.
         </p>
-        {authMessage ? <p className="mt-2 text-xs text-slate-600">{authMessage}</p> : null}
+        {authMessage ? (
+          <p className={`mt-3 border px-2 py-2 text-xs ${messageClasses}`}>{authMessage}</p>
+        ) : null}
       </div>
     </section>
   );
