@@ -40,9 +40,9 @@ export default function AuthCallbackPage() {
         await client.auth.getSession();
 
         if (!cancelled) {
-          setMessage("Authentication complete. Redirecting to configurator...");
+          setMessage("Authentication complete. Redirecting to home...");
           window.setTimeout(() => {
-            router.replace("/configurator");
+            router.replace("/");
           }, 700);
         }
       } catch (error) {

@@ -29,6 +29,20 @@ const LedCanvas = dynamic(
   }
 );
 
+function getPublicAppUrl() {
+  const configuredUrl = process.env.NEXT_PUBLIC_APP_URL?.trim();
+
+  if (configuredUrl) {
+    return configuredUrl.replace(/\/$/, "");
+  }
+
+  if (typeof window !== "undefined") {
+    return window.location.origin;
+  }
+
+  return "";
+}
+
 type ConfiguratorShellProps = {
   panels: Panel[];
   processors: Processor[];
@@ -222,9 +236,7 @@ export function ConfiguratorShell({
         password,
         options: {
           emailRedirectTo:
-            typeof window === "undefined"
-              ? undefined
-              : `${window.location.origin}/auth/callback`
+            getPublicAppUrl() ? `${getPublicAppUrl()}/auth/callback` : undefined
         }
       });
 
