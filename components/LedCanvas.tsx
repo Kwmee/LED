@@ -109,8 +109,13 @@ export function LedCanvas({
       </div>
 
       <div className="flex-1 overflow-auto bg-[#eef2f5] p-2">
-        <div className="inline-block border border-slate-400 bg-white">
-        <Stage width={CANVAS_WIDTH} height={CANVAS_HEIGHT}>
+        <div className="relative inline-block border border-slate-400 bg-white">
+          {(!panelGrid || !panel) && (
+            <div className="absolute inset-0 grid place-items-center bg-[rgba(255,255,255,0.8)] text-sm font-medium text-gray-600">
+              Select panel and processor to render the wall
+            </div>
+          )}
+          <Stage width={CANVAS_WIDTH} height={CANVAS_HEIGHT}>
           <Layer>
             <Rect x={0} y={0} width={CANVAS_WIDTH} height={CANVAS_HEIGHT} fill="#d8dde3" />
             {!panelGrid || !panel ? (
@@ -125,7 +130,7 @@ export function LedCanvas({
               <>{gridRectangles}</>
             )}
           </Layer>
-        </Stage>
+          </Stage>
         </div>
       </div>
     </div>
