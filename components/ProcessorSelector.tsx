@@ -12,15 +12,18 @@ export function ProcessorSelector({
   onSelect
 }: ProcessorSelectorProps) {
   return (
-    <div className="rounded-2xl border border-stroke bg-canvas/70 p-4">
-      <div className="flex items-center justify-between">
-        <h2 className="text-sm font-medium text-white">Processor selection</h2>
-        <span className="text-xs text-slate-400">{processors.length} presets</span>
+    <section className="border-b border-slate-300">
+      <div className="flex items-center justify-between border-b border-slate-300 bg-[#dde2e7] px-3 py-2">
+        <h2 className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-700">
+          Processor
+        </h2>
+        <span className="text-[11px] text-slate-500">{processors.length} presets</span>
       </div>
+      <div className="px-3 py-3">
       <select
         value={selectedProcessorId}
         onChange={(event) => onSelect(event.target.value)}
-        className="mt-4 w-full rounded-xl border border-stroke bg-surface px-3 py-2 text-sm text-white outline-none transition focus:border-orange-300"
+        className="w-full border border-slate-400 bg-white px-2 py-2 text-sm text-slate-900 outline-none focus:border-slate-700"
       >
         {processors.map((processor) => (
           <option key={processor.id} value={processor.id}>
@@ -29,6 +32,7 @@ export function ProcessorSelector({
           </option>
         ))}
       </select>
-    </div>
+      </div>
+    </section>
   );
 }

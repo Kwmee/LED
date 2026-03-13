@@ -56,16 +56,18 @@ export function LedCanvas({
   }, [panelGrid, portMapping]);
 
   return (
-    <div className="rounded-3xl border border-stroke bg-surface/85 p-6 shadow-xl shadow-black/20 backdrop-blur">
-      <div className="flex items-center justify-between gap-4">
+    <div className="flex h-full flex-col">
+      <div className="flex items-center justify-between gap-4 border-b border-slate-300 bg-[#d7dce2] px-4 py-3">
         <div>
-          <h2 className="text-lg font-semibold text-white">LED wall visualization</h2>
-          <p className="mt-1 text-sm text-slate-300">
-            Panel grid, port colors, and wall dimensions rendered with React Konva.
+          <h2 className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-700">
+            Canvas
+          </h2>
+          <p className="mt-1 text-sm text-slate-600">
+            LED wall layout, panel grid and processor port assignment.
           </p>
         </div>
-        <label className="flex items-center gap-3 text-sm text-slate-300">
-          <span>Zoom</span>
+        <label className="flex items-center gap-3 text-sm text-slate-600">
+          <span className="font-medium">Zoom</span>
           <input
             type="range"
             min="0.6"
@@ -77,16 +79,17 @@ export function LedCanvas({
         </label>
       </div>
 
-      <div className="mt-6 overflow-hidden rounded-2xl border border-stroke bg-canvas">
+      <div className="flex-1 overflow-auto bg-[#eef2f5] p-4">
+        <div className="inline-block border border-slate-400 bg-white">
         <Stage width={CANVAS_WIDTH} height={CANVAS_HEIGHT}>
           <Layer>
-            <Rect x={0} y={0} width={CANVAS_WIDTH} height={CANVAS_HEIGHT} fill="#0b1320" />
+            <Rect x={0} y={0} width={CANVAS_WIDTH} height={CANVAS_HEIGHT} fill="#d8dde3" />
             {!panelGrid || !panel ? (
               <Text
                 x={CANVAS_WIDTH / 2 - 140}
                 y={CANVAS_HEIGHT / 2 - 14}
                 text="Select panel and processor to render the wall"
-                fill="#94a3b8"
+                fill="#64748b"
                 fontSize={18}
               />
             ) : (
@@ -105,9 +108,8 @@ export function LedCanvas({
                         width={cellSize - 2}
                         height={cellSize - 2}
                         fill={panelColors[colorIndex]}
-                        stroke="#dbe4f0"
+                        stroke="#475569"
                         strokeWidth={0.8}
-                        cornerRadius={2}
                       />
                     );
                   })
@@ -116,13 +118,14 @@ export function LedCanvas({
                   x={PADDING}
                   y={CANVAS_HEIGHT - 28}
                   text={`${panelGrid.columns} x ${panelGrid.rows} panels | ${widthPixels} x ${heightPixels} px | ${panel.brand} ${panel.model}`}
-                  fill="#e2e8f0"
+                  fill="#334155"
                   fontSize={14}
                 />
               </>
             )}
           </Layer>
         </Stage>
+        </div>
       </div>
     </div>
   );

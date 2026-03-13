@@ -4,7 +4,7 @@ import { sampleProcessors } from "@/lib/sampleProcessors";
 
 export default function ConfiguratorPage() {
   return (
-    <main className="min-h-screen px-4 py-6 sm:px-6 lg:px-8">
+    <main className="min-h-screen">
       <ConfiguratorShell panels={samplePanels} processors={sampleProcessors} />
     </main>
   );

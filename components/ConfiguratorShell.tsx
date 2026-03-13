@@ -4,8 +4,10 @@ import dynamic from "next/dynamic";
 import { useEffect, useMemo, useState } from "react";
 import type { Session, User } from "@supabase/supabase-js";
 import { AuthPanel } from "@/components/AuthPanel";
+import { MainLayout } from "@/components/MainLayout";
 import { PanelSelector } from "@/components/PanelSelector";
 import { ProcessorSelector } from "@/components/ProcessorSelector";
+import { ResultsPanel } from "@/components/ResultsPanel";
 import { ScreenInput } from "@/components/ScreenInput";
 import {
   buildConfigurationSummary,
@@ -261,99 +263,55 @@ export function ConfiguratorShell({
   }
 
   return (
-    <div className="mx-auto grid max-w-7xl gap-6 lg:grid-cols-[360px_minmax(0,1fr)]">
-      <section className="space-y-6 rounded-3xl border border-stroke bg-surface/85 p-6 shadow-xl shadow-black/20 backdrop-blur">
-        <div>
-          <p className="text-xs uppercase tracking-[0.28em] text-orange-300">Configurator</p>
-          <h1 className="mt-2 text-3xl font-semibold text-white">LED Wall Configurator</h1>
-          <p className="mt-2 text-sm text-slate-300">
-            Define the target wall, choose hardware, and validate processor load and
-            port usage.
-          </p>
-        </div>
-
-        <AuthPanel
-          user={user}
-          authLoading={authLoading}
-          authMessage={authMessage}
-          onSignIn={handleSignIn}
-          onSignUp={handleSignUp}
-          onSignOut={handleSignOut}
-        />
-
-        <ScreenInput
-          widthM={widthM}
-          heightM={heightM}
-          pitch={pitch}
-          onWidthChange={setWidthM}
-          onHeightChange={setHeightM}
-          onPitchChange={setPitch}
-        />
-
-        <PanelSelector panels={panels} selectedPanelId={panelId} onSelect={setPanelId} />
-
-        <ProcessorSelector
-          processors={processors}
-          selectedProcessorId={processorId}
-          onSelect={setProcessorId}
-        />
-
-        <div className="rounded-2xl border border-stroke bg-canvas/70 p-4">
-          <h2 className="text-sm font-medium text-white">Calculated output</h2>
-          <dl className="mt-4 grid grid-cols-2 gap-3 text-sm">
-            <div className="rounded-xl border border-stroke p-3">
-              <dt className="text-slate-400">Resolution</dt>
-              <dd className="mt-1 font-medium text-white">
-                {screenPixels.widthPixels} x {screenPixels.heightPixels}
-              </dd>
-            </div>
-            <div className="rounded-xl border border-stroke p-3">
-              <dt className="text-slate-400">Total pixels</dt>
-              <dd className="mt-1 font-medium text-white">{totalPixels.toLocaleString()}</dd>
-            </div>
-            <div className="rounded-xl border border-stroke p-3">
-              <dt className="text-slate-400">Panel grid</dt>
-              <dd className="mt-1 font-medium text-white">
-                {panelGrid ? `${panelGrid.columns} x ${panelGrid.rows}` : "Select panel"}
-              </dd>
-            </div>
-            <div className="rounded-xl border border-stroke p-3">
-              <dt className="text-slate-400">Ports required</dt>
-              <dd className="mt-1 font-medium text-white">{requiredPorts}</dd>
-            </div>
-          </dl>
-
-          <div className="mt-4 rounded-xl border border-stroke p-3 text-sm">
-            <p className="text-slate-400">Processor status</p>
-            <p
-              className={`mt-1 font-medium ${
-                processorCompatibility ? "text-emerald-300" : "text-red-300"
-              }`}
-            >
-              {processorCompatibility
-                ? "Compatible with current wall load."
-                : "Processor limit exceeded or not enough ports."}
+    <MainLayout
+      header={
+        <div className="flex items-center justify-between px-4 py-3">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-600">
+              Engineering Configurator
             </p>
+            <h1 className="mt-1 text-lg font-semibold text-slate-900">LED Wall Configurator</h1>
           </div>
-
-          <button
-            type="button"
-            onClick={handleSave}
-            disabled={!configurationSummary || saveState === "saving" || !user}
-            className="mt-4 w-full rounded-full bg-accent px-4 py-3 text-sm font-medium text-black transition hover:bg-orange-300 disabled:cursor-not-allowed disabled:bg-slate-600 disabled:text-slate-300"
-          >
-            {saveState === "saving"
-              ? "Saving..."
-              : user
-                ? "Save project"
-                : "Sign in to save"}
-          </button>
-
-          {saveMessage ? <p className="mt-2 text-xs text-slate-300">{saveMessage}</p> : null}
+          <div className="flex items-center gap-2 text-xs text-slate-600">
+            <span className="border border-slate-400 bg-[#eef1f4] px-3 py-1">Mode: Main</span>
+            <span className="border border-slate-400 bg-[#eef1f4] px-3 py-1">
+              Processor Check
+            </span>
+          </div>
         </div>
-      </section>
-
-      <section className="space-y-6">
+      }
+      left={
+        <div>
+          <div className="border-b border-slate-400 bg-[#d7dce2] px-4 py-3">
+            <h2 className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-700">
+              Configuration
+            </h2>
+          </div>
+          <AuthPanel
+            user={user}
+            authLoading={authLoading}
+            authMessage={authMessage}
+            onSignIn={handleSignIn}
+            onSignUp={handleSignUp}
+            onSignOut={handleSignOut}
+          />
+          <ScreenInput
+            widthM={widthM}
+            heightM={heightM}
+            pitch={pitch}
+            onWidthChange={setWidthM}
+            onHeightChange={setHeightM}
+            onPitchChange={setPitch}
+          />
+          <PanelSelector panels={panels} selectedPanelId={panelId} onSelect={setPanelId} />
+          <ProcessorSelector
+            processors={processors}
+            selectedProcessorId={processorId}
+            onSelect={setProcessorId}
+          />
+        </div>
+      }
+      center={
         <LedCanvas
           panelGrid={panelGrid}
           portMapping={portMapping}
@@ -361,33 +319,22 @@ export function ConfiguratorShell({
           widthPixels={screenPixels.widthPixels}
           heightPixels={screenPixels.heightPixels}
         />
-
-        <div className="rounded-3xl border border-stroke bg-surface/85 p-6 shadow-xl shadow-black/20 backdrop-blur">
-          <h2 className="text-lg font-semibold text-white">Port distribution</h2>
-          <div className="mt-4 space-y-3">
-            {portMapping.map((port) => (
-              <div
-                key={port.portNumber}
-                className="flex items-center justify-between rounded-2xl border border-stroke bg-canvas/70 px-4 py-3 text-sm"
-              >
-                <div className="flex items-center gap-3">
-                  <span
-                    className="h-3 w-3 rounded-full"
-                    style={{ backgroundColor: port.color }}
-                  />
-                  <span className="font-medium text-white">Port {port.portNumber}</span>
-                </div>
-                <span className="text-slate-300">
-                  Columns {port.startColumn + 1}-{port.endColumn + 1}
-                </span>
-              </div>
-            ))}
-            {portMapping.length === 0 ? (
-              <p className="text-sm text-slate-400">Select a panel and processor to map ports.</p>
-            ) : null}
-          </div>
-        </div>
-      </section>
-    </div>
+      }
+      right={
+        <ResultsPanel
+          widthPixels={screenPixels.widthPixels}
+          heightPixels={screenPixels.heightPixels}
+          totalPixels={totalPixels}
+          panelGridLabel={panelGrid ? `${panelGrid.columns} x ${panelGrid.rows}` : "N/A"}
+          requiredPorts={requiredPorts}
+          processorCompatibility={Boolean(processorCompatibility)}
+          portMapping={portMapping}
+          canSave={Boolean(configurationSummary && user && saveState !== "saving")}
+          saveState={saveState}
+          saveMessage={saveMessage}
+          onSave={handleSave}
+        />
+      }
+    />
   );
 }
