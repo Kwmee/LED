@@ -122,16 +122,7 @@ export function LedCanvas({
                 fontSize={18}
               />
             ) : (
-              <>
-                {gridRectangles}
-                <Text
-                  x={PADDING}
-                  y={CANVAS_HEIGHT - 28}
-                  text={`${panelGrid.columns} x ${panelGrid.rows} panels | ${widthPixels} x ${heightPixels} px | ${panel.brand} ${panel.model}`}
-                  fill="#334155"
-                  fontSize={14}
-                />
-              </>
+              <>{gridRectangles}</>
             )}
           </Layer>
         </Stage>
