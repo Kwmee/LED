@@ -4,10 +4,13 @@ type ResultsPanelProps = {
   widthPixels: number;
   heightPixels: number;
   totalPixels: number;
+  totalPanels: number;
   panelGridLabel: string;
   requiredPorts: number;
   processorCompatibility: boolean;
   portMapping: PortMapping[];
+  totalWeightKg: number | null;
+  totalPowerW: number | null;
   canSave: boolean;
   saveState: "idle" | "saving" | "saved" | "error";
   saveMessage: string;
@@ -35,10 +38,13 @@ export function ResultsPanel({
   widthPixels,
   heightPixels,
   totalPixels,
+  totalPanels,
   panelGridLabel,
   requiredPorts,
   processorCompatibility,
   portMapping,
+  totalWeightKg,
+  totalPowerW,
   canSave,
   saveState,
   saveMessage,
@@ -55,11 +61,20 @@ export function ResultsPanel({
       <div className="border-b border-slate-300">
         <StatRow label="Resolution" value={`${widthPixels} x ${heightPixels}`} />
         <StatRow label="Total Pixels" value={totalPixels.toLocaleString()} />
+        <StatRow label="Panels" value={String(totalPanels)} />
         <StatRow label="Panel Grid" value={panelGridLabel} />
         <StatRow label="Ports Req." value={String(requiredPorts)} />
         <StatRow
           label="Processor"
           value={processorCompatibility ? "COMPATIBLE" : "LIMIT EXCEEDED"}
+        />
+        <StatRow
+          label="Power"
+          value={totalPowerW === null ? "N/A" : `${totalPowerW.toLocaleString()} W`}
+        />
+        <StatRow
+          label="Weight"
+          value={totalWeightKg === null ? "N/A" : `${totalWeightKg.toFixed(1)} kg`}
         />
       </div>
 

@@ -11,6 +11,8 @@ type LedCanvasProps = {
   panel: Panel | null;
   widthPixels: number;
   heightPixels: number;
+  zoom: number;
+  onZoomChange: (value: number) => void;
 };
 
 const CANVAS_WIDTH = 980;
@@ -22,10 +24,10 @@ export function LedCanvas({
   portMapping,
   panel,
   widthPixels,
-  heightPixels
+  heightPixels,
+  zoom,
+  onZoomChange
 }: LedCanvasProps) {
-  const [zoom, setZoom] = useState(1);
-
   const cellSize = useMemo(() => {
     if (!panelGrid || panelGrid.columns === 0 || panelGrid.rows === 0) {
       return 48;
@@ -62,9 +64,9 @@ export function LedCanvas({
           <h2 className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-700">
             Canvas
           </h2>
-          <p className="mt-0.5 text-[12px] text-slate-600">
-            LED wall layout, panel grid and processor port assignment.
-          </p>
+          <div className="mt-0.5 text-sm font-medium text-gray-800">
+            Display Resolution: {widthPixels} x {heightPixels}
+          </div>
         </div>
         <label className="flex items-center gap-2 text-[12px] text-slate-600">
           <span className="font-semibold uppercase tracking-[0.06em]">Zoom</span>
@@ -74,7 +76,7 @@ export function LedCanvas({
             max="1.8"
             step="0.1"
             value={zoom}
-            onChange={(event) => setZoom(Number(event.target.value))}
+            onChange={(event) => onZoomChange(Number(event.target.value))}
           />
         </label>
       </div>

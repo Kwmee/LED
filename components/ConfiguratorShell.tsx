@@ -2,14 +2,9 @@
 
 import dynamic from "next/dynamic";
 import { useEffect, useMemo, useState } from "react";
-import type { Session, User } from "@supabase/supabase-js";
-import { AuthPanel } from "@/components/AuthPanel";
-import { CustomHardwareList } from "@/components/CustomHardwareList";
-import { MainLayout } from "@/components/MainLayout";
-import { PanelSelector } from "@/components/PanelSelector";
-import { ProcessorSelector } from "@/components/ProcessorSelector";
+import { AppLayout } from "@/components/AppLayout";
 import { ResultsPanel } from "@/components/ResultsPanel";
-import { ScreenInput } from "@/components/ScreenInput";
+import { SidebarConfig } from "@/components/SidebarConfig";
 import {
   buildConfigurationSummary,
   calculatePanelGrid,
@@ -19,16 +14,17 @@ import {
   isProcessorCompatible
 } from "@/lib/calculations";
 import { buildPortMapping } from "@/lib/portMapping";
-import { createBrowserSupabaseClient } from "@/lib/supabase/client";
+import { fetchCustomPanels, fetchCustomProcessors } from "@/lib/hardwareQueries";
+import { useSupabaseAuth } from "@/lib/useSupabaseAuth";
 import type { Panel } from "@/types/panel";
 import type { Processor } from "@/types/processor";
 
 const LedCanvas = dynamic(
   () => import("@/components/LedCanvas").then((module) => module.LedCanvas),
-  {
-    ssr: false
-  }
+  { ssr: false }
 );
+
+const DEFAULT_PITCHES = [1.2, 1.5, 1.9, 2.5, 2.6, 2.9, 3.9, 4.8];
 
 function getPublicAppUrl() {
   const configuredUrl = process.env.NEXT_PUBLIC_APP_URL?.trim();
@@ -49,79 +45,64 @@ type ConfiguratorShellProps = {
   processors: Processor[];
 };
 
-export function ConfiguratorShell({
-  panels,
-  processors
-}: ConfiguratorShellProps) {
+export function ConfiguratorShell({ panels, processors }: ConfiguratorShellProps) {
   const [widthM, setWidthM] = useState(6);
   const [heightM, setHeightM] = useState(3);
   const [pitch, setPitch] = useState(2.6);
+  const [brightness, setBrightness] = useState(1200);
+  const [refreshRate, setRefreshRate] = useState(3840);
   const [panelId, setPanelId] = useState(panels[0]?.id ?? "");
   const [processorId, setProcessorId] = useState(processors[0]?.id ?? "");
+  const [zoom, setZoom] = useState(1);
   const [saveState, setSaveState] = useState<"idle" | "saving" | "saved" | "error">("idle");
   const [saveMessage, setSaveMessage] = useState("");
-  const [user, setUser] = useState<User | null>(null);
-  const [session, setSession] = useState<Session | null>(null);
-  const [authLoading, setAuthLoading] = useState(false);
-  const [authMessage, setAuthMessage] = useState("");
-  const [authTone, setAuthTone] = useState<"neutral" | "success" | "error">("neutral");
   const [customPanels, setCustomPanels] = useState<Panel[]>([]);
   const [customProcessors, setCustomProcessors] = useState<Processor[]>([]);
+  const {
+    user,
+    session,
+    authLoading,
+    authMessage,
+    authTone,
+    signIn,
+    signUp,
+    signOut
+  } = useSupabaseAuth();
 
-  const supabase = useMemo(() => createBrowserSupabaseClient(), []);
+  useEffect(() => {
+    if (!session || !user) {
+      setCustomPanels([]);
+      setCustomProcessors([]);
+      return;
+    }
+
+    Promise.all([fetchCustomPanels(session), fetchCustomProcessors(session)])
+      .then(([panelRows, processorRows]) => {
+        setCustomPanels(panelRows);
+        setCustomProcessors(processorRows);
+      })
+      .catch(() => {
+        setCustomPanels([]);
+        setCustomProcessors([]);
+      });
+  }, [session, user]);
+
   const availablePanels = useMemo(() => [...panels, ...customPanels], [customPanels, panels]);
   const availableProcessors = useMemo(
     () => [...processors, ...customProcessors],
     [customProcessors, processors]
   );
-
-  useEffect(() => {
-    if (!supabase) {
-      setAuthMessage("Supabase client is not configured.");
-      setAuthTone("error");
-      return;
-    }
-
-    let isMounted = true;
-
-    supabase.auth.getSession().then(({ data, error }) => {
-      if (!isMounted) {
-        return;
-      }
-
-      if (error) {
-        setAuthMessage(error.message);
-        setAuthTone("error");
-        return;
-      }
-
-      setSession(data.session);
-      setUser(data.session?.user ?? null);
-    });
-
-    const {
-      data: { subscription }
-    } = supabase.auth.onAuthStateChange((_event, currentSession) => {
-      if (!isMounted) {
-        return;
-      }
-
-      setSession(currentSession);
-      setUser(currentSession?.user ?? null);
-    });
-
-    return () => {
-      isMounted = false;
-      subscription.unsubscribe();
-    };
-  }, [supabase]);
+  const availablePitches = useMemo(() => {
+    const combined = new Set([...DEFAULT_PITCHES, ...availablePanels.map((item) => item.pitch)]);
+    return [...combined].sort((a, b) => a - b);
+  }, [availablePanels]);
 
   const selectedPanel = useMemo(
-    () => availablePanels.find((panel) => panel.id === panelId) ?? null,
+    () => availablePanels.find((item) => item.id === panelId) ?? null,
     [availablePanels, panelId]
   );
   const selectedProcessor = useMemo(
-    () => availableProcessors.find((processor) => processor.id === processorId) ?? null,
+    () => availableProcessors.find((item) => item.id === processorId) ?? null,
     [availableProcessors, processorId]
   );
 
@@ -154,6 +135,15 @@ export function ConfiguratorShell({
     panelGrid && selectedProcessor
       ? buildPortMapping(panelGrid.columns, selectedProcessor.pixelsPerPort, totalPixels)
       : [];
+  const totalPanels = panelGrid?.totalPanels ?? 0;
+  const totalWeightKg =
+    selectedPanel?.weightKg !== undefined && selectedPanel?.weightKg !== null
+      ? selectedPanel.weightKg * totalPanels
+      : null;
+  const totalPowerW =
+    selectedPanel?.powerMaxW !== undefined && selectedPanel?.powerMaxW !== null
+      ? selectedPanel.powerMaxW * totalPanels
+      : null;
 
   const configurationSummary =
     selectedPanel && selectedProcessor && panelGrid
@@ -210,198 +200,75 @@ export function ConfiguratorShell({
     }
   }
 
-  async function handleSignIn(email: string, password: string) {
-    if (!supabase) {
-      setAuthMessage("Supabase client is not configured.");
-      setAuthTone("error");
-      return;
-    }
-
-    setAuthLoading(true);
-    setAuthMessage("");
-    setAuthTone("neutral");
-
-    try {
-      const { error } = await supabase.auth.signInWithPassword({
-        email,
-        password
-      });
-
-      if (error) {
-        throw error;
-      }
-
-      setAuthMessage("Session started.");
-      setAuthTone("success");
-    } catch (error) {
-      setAuthMessage(error instanceof Error ? error.message : "Unable to sign in.");
-      setAuthTone("error");
-    } finally {
-      setAuthLoading(false);
-    }
-  }
-
-  async function handleSignUp(email: string, password: string) {
-    if (!supabase) {
-      setAuthMessage("Supabase client is not configured.");
-      setAuthTone("error");
-      return;
-    }
-
-    setAuthLoading(true);
-    setAuthMessage("");
-    setAuthTone("neutral");
-
-    try {
-      const { data, error } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          emailRedirectTo:
-            getPublicAppUrl() ? `${getPublicAppUrl()}/auth/callback` : undefined
-        }
-      });
-
-      if (error) {
-        throw error;
-      }
-
-      if (data.session) {
-        setAuthMessage("Account created and session started.");
-        setAuthTone("success");
-        return;
-      }
-
-      if (data.user) {
-        setAuthMessage(
-          "Account created. Check your inbox or spam folder to confirm the email if confirmation is enabled in Supabase."
-        );
-        setAuthTone("success");
-        return;
-      }
-
-      setAuthMessage("Signup request processed. Review your Supabase email confirmation settings.");
-      setAuthTone("neutral");
-    } catch (error) {
-      setAuthMessage(error instanceof Error ? error.message : "Unable to create account.");
-      setAuthTone("error");
-    } finally {
-      setAuthLoading(false);
-    }
-  }
-
-  async function handleSignOut() {
-    if (!supabase) {
-      setAuthMessage("Supabase client is not configured.");
-      setAuthTone("error");
-      return;
-    }
-
-    setAuthLoading(true);
-
-    try {
-      const { error } = await supabase.auth.signOut();
-
-      if (error) {
-        throw error;
-      }
-
-      setAuthMessage("Signed out.");
-      setAuthTone("neutral");
-      setSaveMessage("");
-      setSaveState("idle");
-    } catch (error) {
-      setAuthMessage(error instanceof Error ? error.message : "Unable to sign out.");
-      setAuthTone("error");
-    } finally {
-      setAuthLoading(false);
-    }
-  }
-
   return (
-    <MainLayout
-      header={
-        <div className="flex items-center justify-between px-3 py-2">
-          <div>
-            <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-600">
-              Engineering Configurator
-            </p>
-            <h1 className="mt-0.5 text-[15px] font-semibold text-slate-900">LED Wall Configurator</h1>
-          </div>
-          <div className="flex items-center gap-1.5 text-[11px] text-slate-600">
-            <span className="border border-slate-400 bg-[#eef1f4] px-2 py-1">Mode: Main</span>
-            <span className="border border-slate-400 bg-[#eef1f4] px-2 py-1">
-              Processor Check
-            </span>
-          </div>
-        </div>
-      }
-      left={
-        <div>
-          <div className="border-b border-slate-400 bg-[#d7dce2] px-3 py-2">
-            <h2 className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-700">
-              Configuration
-            </h2>
-          </div>
-          <AuthPanel
-            user={user}
-            authLoading={authLoading}
-            authMessage={authMessage}
-            authTone={authTone}
-            onSignIn={handleSignIn}
-            onSignUp={handleSignUp}
-            onSignOut={handleSignOut}
-          />
-          <CustomHardwareList
-            session={session}
-            user={user}
-            onPanelsChange={setCustomPanels}
-            onProcessorsChange={setCustomProcessors}
-          />
-          <ScreenInput
-            widthM={widthM}
-            heightM={heightM}
-            pitch={pitch}
-            onWidthChange={setWidthM}
-            onHeightChange={setHeightM}
-            onPitchChange={setPitch}
-          />
-          <PanelSelector
-            panels={availablePanels}
-            selectedPanelId={panelId}
-            onSelect={setPanelId}
-          />
-          <ProcessorSelector
-            processors={availableProcessors}
-            selectedProcessorId={processorId}
-            onSelect={setProcessorId}
+    <AppLayout
+      user={user}
+      authLoading={authLoading}
+      authMessage={authMessage}
+      authTone={authTone}
+      onSignIn={signIn}
+      onSignUp={(email, password) => signUp(email, password, getPublicAppUrl())}
+      onSignOut={signOut}
+      status={{
+        left: `Panel: ${selectedPanel ? `${selectedPanel.brand} ${selectedPanel.model}` : "N/A"}`,
+        center: `Processor: ${
+          selectedProcessor ? `${selectedProcessor.brand} ${selectedProcessor.model}` : "N/A"
+        }`,
+        right: saveMessage || `Brightness ${brightness} nits | Refresh ${refreshRate} Hz`
+      }}
+    >
+      <div className="grid min-h-[calc(100vh-88px)] grid-cols-1 lg:grid-cols-[280px_minmax(0,1fr)_260px]">
+        <SidebarConfig
+          widthM={widthM}
+          heightM={heightM}
+          pitch={pitch}
+          brightness={brightness}
+          refreshRate={refreshRate}
+          pitches={availablePitches}
+          panels={availablePanels}
+          processors={availableProcessors}
+          selectedPanelId={panelId}
+          selectedProcessorId={processorId}
+          onWidthChange={setWidthM}
+          onHeightChange={setHeightM}
+          onPitchChange={setPitch}
+          onBrightnessChange={setBrightness}
+          onRefreshRateChange={setRefreshRate}
+          onPanelChange={setPanelId}
+          onProcessorChange={setProcessorId}
+          onCalculate={() => setSaveMessage("Values recalculated.")}
+          canManageHardware={Boolean(user)}
+        />
+        <div className="border-r border-gray-300 bg-white">
+          <LedCanvas
+            panelGrid={panelGrid}
+            portMapping={portMapping}
+            panel={selectedPanel}
+            widthPixels={screenPixels.widthPixels}
+            heightPixels={screenPixels.heightPixels}
+            zoom={zoom}
+            onZoomChange={setZoom}
           />
         </div>
-      }
-      center={
-        <LedCanvas
-          panelGrid={panelGrid}
-          portMapping={portMapping}
-          panel={selectedPanel}
-          widthPixels={screenPixels.widthPixels}
-          heightPixels={screenPixels.heightPixels}
-        />
-      }
-      right={
-        <ResultsPanel
-          widthPixels={screenPixels.widthPixels}
-          heightPixels={screenPixels.heightPixels}
-          totalPixels={totalPixels}
-          panelGridLabel={panelGrid ? `${panelGrid.columns} x ${panelGrid.rows}` : "N/A"}
-          requiredPorts={requiredPorts}
-          processorCompatibility={Boolean(processorCompatibility)}
-          portMapping={portMapping}
-          canSave={Boolean(configurationSummary && user && saveState !== "saving")}
-          saveState={saveState}
-          saveMessage={saveMessage}
-          onSave={handleSave}
-        />
-      }
-    />
+        <div className="bg-white">
+          <ResultsPanel
+            widthPixels={screenPixels.widthPixels}
+            heightPixels={screenPixels.heightPixels}
+            totalPixels={totalPixels}
+            totalPanels={totalPanels}
+            panelGridLabel={panelGrid ? `${panelGrid.columns} x ${panelGrid.rows}` : "N/A"}
+            requiredPorts={requiredPorts}
+            processorCompatibility={Boolean(processorCompatibility)}
+            portMapping={portMapping}
+            totalWeightKg={totalWeightKg}
+            totalPowerW={totalPowerW}
+            canSave={Boolean(configurationSummary && user && saveState !== "saving")}
+            saveState={saveState}
+            saveMessage={saveMessage}
+            onSave={handleSave}
+          />
+        </div>
+      </div>
+    </AppLayout>
   );
 }
